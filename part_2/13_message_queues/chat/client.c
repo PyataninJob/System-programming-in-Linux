@@ -1,19 +1,19 @@
 
-#include <stdio.h> // Подключение стандартной библиотеки ввода-вывода
-#include <stdlib.h> // Подключение стандартной библиотеки для работы с памятью и процессами
-#include <string.h> // Подключение библиотеки для работы со строками
-#include <sys/ipc.h> // Подключение библиотеки для работы с IPC (межпроцессное взаимодействие)
-#include <sys/msg.h> // Подключение библиотеки для работы с очередями сообщений
-#include <pthread.h> // Подключение библиотеки для работы с потоками
-#include <ncurses.h> // Подключение библиотеки для работы с интерфейсом в терминале
+#include <stdio.h> 
+#include <stdlib.h> 
+#include <string.h> 
+#include <sys/ipc.h> 
+#include <sys/msg.h> // Очереди сообщений
+#include <pthread.h> // Потоки
+#include <ncurses.h> // Интерфейс
 
-#define MAX_TEXT 512 // Определение максимальной длины текста сообщения
-#define MAX_USERS 10 // Определение максимального количества пользователей
+#define MAX_TEXT 512
+#define MAX_USERS 10
 
-// Структура для сообщения
+// Сообщения
 struct message {
-    long msg_type; // Тип сообщения
-    char msg_text[MAX_TEXT]; // Текст сообщения
+    long msg_type;
+    char msg_text[MAX_TEXT];
 };
 
 // Окна для интерфейса
@@ -23,7 +23,6 @@ char users[MAX_USERS][MAX_TEXT]; // Массив имен пользовател
 int user_count = 0; // Количество пользователей
 char username[MAX_TEXT]; // Имя текущего пользователя
 
-// Прототипы функций
 void *receive_messages(void *arg);
 void init_windows();
 void update_users();
@@ -31,28 +30,25 @@ void update_messages(const char *message);
 
 // Функция для получения сообщений в отдельном потоке
 void *receive_messages(void *arg) {
-    struct message msg; // Переменная для хранения сообщения
-    while (1) { // Бесконечный цикл для получения сообщений
+    struct message msg; 
+    while (1) { 
         // Получение сообщения из очереди
-        if (msgrcv(msgid, &msg, sizeof(msg.msg_text), 0, 0) == -1) { // Получение сообщения любого типа
-            perror("msgrcv"); // Вывод ошибки
-            exit(1); // Завершение программы с ошибкой
+        if (msgrcv(msgid, &msg, sizeof(msg.msg_text), 0, 0) == -1) {
+            perror("msgrcv");
+            exit(1);
         }
         // Обработка сообщения
-        if (msg.msg_type == 1) { // Если сообщение типа 1
-            // Вывод сообщения в окно сообщений
+        if (msg.msg_type == 1) { 
             update_messages(msg.msg_text); // Обновление окна сообщений
-        } else if (msg.msg_type == 2) { // Если сообщение типа 2
-            // Обновление списка пользователей
+        } else if (msg.msg_type == 2) { 
             char *token = strtok(msg.msg_text, ","); // Разделение строки на имена пользователей
             user_count = 0; // Сброс счетчика пользователей
-            while (token != NULL && user_count < MAX_USERS) { // Пока есть имена и не превышен максимум
-                strcpy(users[user_count++], token); // Копирование имени пользователя в массив
-                token = strtok(NULL, ","); // Получение следующего имени
+            while (token != NULL && user_count < MAX_USERS) {
+                strcpy(users[user_count++], token);
+                token = strtok(NULL, ",");
             }
             update_users(); // Обновление окна списка пользователей
 
-            // Формирование сообщения о подключении нового пользователя
             if (user_count > 0) {
                 char join_msg[MAX_TEXT];
                 snprintf(join_msg, MAX_TEXT, "**User %s has joined the chat**", users[user_count - 1]);
@@ -60,43 +56,38 @@ void *receive_messages(void *arg) {
             }
         }
     }
-    return NULL; // Завершение потока
+    return NULL;
 }
 
 // Функция для инициализации окон интерфейса
 void init_windows() {
-    int height, width; // Переменные для хранения размеров терминала
-    // Получение размеров терминала
+    int height, width;
     getmaxyx(stdscr, height, width); // Получение размеров стандартного окна
 
-    // Создание окна для сообщений
-    messages_win = newwin(height - 3, width - 20, 0, 0); // Создание окна для сообщений
-    // Создание окна для списка пользователей
-    users_win = newwin(height - 3, 20, 0, width - 20); // Создание окна для списка пользователей
-    // Создание окна для ввода сообщений
-    input_win = newwin(3, width, height - 3, 0); // Создание окна для ввода сообщений
+    messages_win = newwin(height - 3, width - 20, 0, 0); 
+    users_win = newwin(height - 3, 20, 0, width - 20); 
+    input_win = newwin(3, width, height - 3, 0);
 
     // Отрисовка рамок для окон
-    box(messages_win, 0, 0); // Отрисовка рамки для окна сообщений
-    box(users_win, 0, 0); // Отрисовка рамки для окна списка пользователей
-    box(input_win, 0, 0); // Отрисовка рамки для окна ввода сообщений
+    box(messages_win, 0, 0);
+    box(users_win, 0, 0);
+    box(input_win, 0, 0);
 
     // Отображение заголовка для окна пользователей
-    mvwprintw(users_win, 1, 1, "Users:"); // Вывод заголовка в окно списка пользователей
-    wrefresh(messages_win); // Обновление окна сообщений
-    wrefresh(users_win); // Обновление окна списка пользователей
-    wrefresh(input_win); // Обновление окна ввода сообщений
+    mvwprintw(users_win, 1, 1, "Users:");
+    wrefresh(messages_win);
+    wrefresh(users_win);
+    wrefresh(input_win);
 }
 
 // Функция для обновления списка пользователей
 void update_users() {
-    // Очистка окна пользователей
     werase(users_win); // Очистка окна списка пользователей
     box(users_win, 0, 0); // Отрисовка рамки для окна списка пользователей
-    mvwprintw(users_win, 1, 1, "Users:"); // Вывод заголовка в окно списка пользователей
+    mvwprintw(users_win, 1, 1, "Users:");
     // Вывод списка пользователей
-    for (int i = 0; i < user_count; i++) { // Проход по всем пользователям
-        mvwprintw(users_win, i + 2, 1, "%s", users[i]); // Вывод имени пользователя
+    for (int i = 0; i < user_count; i++) {
+        mvwprintw(users_win, i + 2, 1, "%s", users[i]);
     }
     wrefresh(users_win); // Обновление окна списка пользователей
 }
@@ -122,24 +113,24 @@ void update_messages(const char *message) {
     wmove(messages_win, max_y - n - 1, 1);
 
     // Вывод нового сообщения в окно сообщений
-    wprintw(messages_win, "%s", message); // Вывод сообщения в окно
-    box(messages_win, 0, 0); // Отрисовка рамки для окна сообщений
-    wrefresh(messages_win); // Обновление окна сообщений
+    wprintw(messages_win, "%s", message);
+    box(messages_win, 0, 0);
+    wrefresh(messages_win);
 }
 
 int main() {
-    key_t key; // Переменная для хранения ключа
-    struct message msg; // Переменная для хранения сообщения
-    pthread_t recv_thread; // Переменная для хранения идентификатора потока
+    key_t key;
+    struct message msg;
+    pthread_t recv_thread;
 
     // Генерация уникального ключа
-    key = ftok("server", 65); // Генерация ключа на основе файла и идентификатора
+    key = ftok("server", 65);
 
     // Подключение к очереди сообщений
-    msgid = msgget(key, 0666 | IPC_CREAT); // Подключение к очереди сообщений с правами доступа 0666
-    if (msgid == -1) { // Проверка на ошибку подключения к очереди
-        perror("msgget"); // Вывод ошибки
-        exit(1); // Завершение программы с ошибкой
+    msgid = msgget(key, 0666 | IPC_CREAT);
+    if (msgid == -1) {
+        perror("msgget");
+        exit(1);
     }
 
     // Инициализация ncurses
@@ -149,36 +140,35 @@ int main() {
     keypad(stdscr, TRUE); // Включение обработки функциональных клавиш
 
     // Инициализация окон интерфейса
-    init_windows(); // Вызов функции инициализации окон
+    init_windows();
 
     // Запуск потока для получения сообщений
-    pthread_create(&recv_thread, NULL, receive_messages, NULL); // Создание потока для получения сообщений
+    pthread_create(&recv_thread, NULL, receive_messages, NULL);
 
     // Ввод имени пользователя
-    mvwprintw(input_win, 1, 1, "Enter your name: "); // Вывод приглашения для ввода имени
-    wrefresh(input_win); // Обновление окна ввода сообщений
-    wgetnstr(input_win, username, MAX_TEXT); // Получение строки ввода от пользователя
+    mvwprintw(input_win, 1, 1, "Enter your name: ");
+    wrefresh(input_win);
+    wgetnstr(input_win, username, MAX_TEXT);
 
     // Отправка сообщения о новом пользователе серверу
-    msg.msg_type = 2; // Установка типа сообщения для нового пользователя
-    snprintf(msg.msg_text, MAX_TEXT, "%s", username); // Формирование сообщения о новом пользователе
-    if (msgsnd(msgid, &msg, sizeof(msg.msg_text), 0) == -1) { // Отправка сообщения в очередь
-        perror("msgsnd"); // Вывод ошибки
-        exit(1); // Завершение программы с ошибкой
+    msg.msg_type = 2;
+    snprintf(msg.msg_text, MAX_TEXT, "%s", username);
+    if (msgsnd(msgid, &msg, sizeof(msg.msg_text), 0) == -1) {
+        perror("msgsnd");
+        exit(1);
     }
 
-    // Установка типа сообщения для обычных сообщений
-    msg.msg_type = 1; // Установка типа сообщения
+    msg.msg_type = 1;
 
-    while (1) { // Бесконечный цикл для ввода сообщений
+    while (1) {
         // Очистка окна ввода
-        werase(input_win); // Очистка окна ввода сообщений
+        werase(input_win);
         box(input_win, 0, 0); // Отрисовка рамки для окна ввода сообщений
         mvwprintw(input_win, 1, 1, "Enter message: "); // Вывод приглашения для ввода сообщения
         wrefresh(input_win); // Обновление окна ввода сообщений
 
         // Получение строки ввода от пользователя
-        wgetnstr(input_win, msg.msg_text, MAX_TEXT); // Получение строки ввода от пользователя
+        wgetnstr(input_win, msg.msg_text, MAX_TEXT);
 
         // Добавление имени пользователя к сообщению
         char full_msg[MAX_TEXT];
@@ -186,13 +176,13 @@ int main() {
         strncpy(msg.msg_text, full_msg, MAX_TEXT);
 
         // Отправка сообщения серверу
-        if (msgsnd(msgid, &msg, sizeof(msg.msg_text), 0) == -1) { // Отправка сообщения в очередь
-            perror("msgsnd"); // Вывод ошибки
-            exit(1); // Завершение программы с ошибкой
+        if (msgsnd(msgid, &msg, sizeof(msg.msg_text), 0) == -1) {
+            perror("msgsnd");
+            exit(1);
         }
     }
 
-    // Завершение работы ncurses
+    
     endwin(); // Завершение работы с ncurses
-    return 0; // Завершение программы
+    return 0;
 }

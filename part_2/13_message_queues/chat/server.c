@@ -1,26 +1,26 @@
-#include <stdio.h> // Подключение стандартной библиотеки ввода-вывода
-#include <stdlib.h> // Подключение стандартной библиотеки для работы с памятью и процессами
-#include <string.h> // Подключение библиотеки для работы со строками
-#include <sys/ipc.h> // Подключение библиотеки для работы с IPC (межпроцессное взаимодействие)
-#include <sys/msg.h> // Подключение библиотеки для работы с очередями сообщений
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/ipc.h> 
+#include <sys/msg.h> // Очереди сообщений
 
-#define MAX_TEXT 512 // Определение максимальной длины текста сообщения
-#define MAX_USERS 10 // Определение максимального количества пользователей
+#define MAX_TEXT 512
+#define MAX_USERS 10
 
 // Структура для сообщения
 struct message {
-    long msg_type; // Тип сообщения
-    char msg_text[MAX_TEXT]; // Текст сообщения
+    long msg_type;
+    char msg_text[MAX_TEXT];
 };
 
 // Структура для пользователя
 struct user {
-    char name[MAX_TEXT]; // Имя пользователя
+    char name[MAX_TEXT];
 };
 
 // Массив пользователей
-struct user users[MAX_USERS]; // Массив структур пользователей
-int user_count = 0; // Количество пользователей
+struct user users[MAX_USERS];
+int user_count = 0;
 
 // Прототипы функций
 void broadcast_message(int msgid, struct message *msg);
@@ -30,30 +30,30 @@ void print_user_list();
 
 // Функция для рассылки сообщения всем пользователям
 void broadcast_message(int msgid, struct message *msg) {
-    for (int i = 0; i < user_count; i++) { // Проход по всем пользователям
+    for (int i = 0; i < user_count; i++) {
         if (msgsnd(msgid, msg, sizeof(msg->msg_text), 0) == -1) { // Отправка сообщения в очередь
-            perror("msgsnd"); // Вывод ошибки, если отправка не удалась
-            exit(1); // Завершение программы с ошибкой
+            perror("msgsnd");
+            exit(1);
         }
     }
 }
 
 // Функция для добавления нового пользователя
 void add_user(const char *name) {
-    if (user_count < MAX_USERS) { // Проверка, что количество пользователей не превышает максимум
-        strcpy(users[user_count].name, name); // Копирование имени пользователя в массив
-        user_count++; // Увеличение счетчика пользователей
+    if (user_count < MAX_USERS) {
+        strcpy(users[user_count].name, name);
+        user_count++;
     }
 }
 
 // Функция для отправки списка пользователей
 void send_user_list(int msgid) {
-    struct message msg; // Создание структуры сообщения
-    msg.msg_type = 2; // Тип сообщения для списка пользователей
-    strcpy(msg.msg_text, ""); // Инициализация текста сообщения
-    for (int i = 0; i < user_count; i++) { // Проход по всем пользователям
-        strcat(msg.msg_text, users[i].name); // Добавление имени пользователя в сообщение
-        if (i < user_count - 1) { // Если это не последний пользователь
+    struct message msg;
+    msg.msg_type = 2;
+    strcpy(msg.msg_text, "");
+    for (int i = 0; i < user_count; i++) {
+        strcat(msg.msg_text, users[i].name);
+        if (i < user_count - 1) {
             strcat(msg.msg_text, ","); // Добавление запятой между именами
         }
     }
@@ -62,48 +62,48 @@ void send_user_list(int msgid) {
 
 // Функция для вывода списка пользователей на сервере
 void print_user_list() {
-    printf("Current users:\n"); // Вывод заголовка
-    for (int i = 0; i < user_count; i++) { // Проход по всем пользователям
-        printf("%s\n", users[i].name); // Вывод имени пользователя
+    printf("Current users:\n"); 
+    for (int i = 0; i < user_count; i++) {
+        printf("%s\n", users[i].name);
     }
 }
 
 int main() {
-    key_t key; // Переменная для хранения ключа
-    int msgid; // Переменная для хранения идентификатора очереди сообщений
-    struct message msg; // Переменная для хранения сообщения
+    key_t key;
+    int msgid;
+    struct message msg;
 
     // Генерация уникального ключа
-    key = ftok("server", 65); // Генерация ключа на основе файла и идентификатора
+    key = ftok("server", 65);
 
     // Создание очереди сообщений
-    msgid = msgget(key, 0666 | IPC_CREAT); // Создание очереди сообщений с правами доступа 0666
-    if (msgid == -1) { // Проверка на ошибку создания очереди
-        perror("msgget"); // Вывод ошибки
-        exit(1); // Завершение программы с ошибкой
+    msgid = msgget(key, 0666 | IPC_CREAT);
+    if (msgid == -1) {
+        perror("msgget");
+        exit(1);
     }
 
-    printf("Server started. Waiting for messages...\n"); // Вывод сообщения о старте сервера
+    printf("Server started. Waiting for messages...\n");
 
-    while (1) { // Бесконечный цикл для обработки сообщений
+    while (1) {
         // Получение сообщения от клиента
-        if (msgrcv(msgid, &msg, sizeof(msg.msg_text), 0, 0) == -1) { // Получение сообщения любого типа
-            perror("msgrcv"); // Вывод ошибки
+        if (msgrcv(msgid, &msg, sizeof(msg.msg_text), 0, 0) == -1) {
+            perror("msgrcv");
             exit(1); // Завершение программы с ошибкой
         }
 
         // Обработка сообщения в зависимости от типа
         if (msg.msg_type == 1) { // Обычное сообщение
-            printf("Received message: %s\n", msg.msg_text); // Вывод полученного сообщения
-            broadcast_message(msgid, &msg); // Рассылка сообщения всем пользователям
-        } else if (msg.msg_type == 2) { // Сообщение о новом пользователе
-            printf("Adding new user: %s\n", msg.msg_text); // Вывод имени нового пользователя
+            printf("Received message: %s\n", msg.msg_text);
+            broadcast_message(msgid, &msg);
+        } else if (msg.msg_type == 2) {
+            printf("Adding new user: %s\n", msg.msg_text);
             
-            add_user(msg.msg_text); // Добавление нового пользователя
-            send_user_list(msgid); // Отправка обновленного списка пользователей
-            print_user_list(); // Вывод списка пользователей на сервере
+            add_user(msg.msg_text);
+            send_user_list(msgid);
+            print_user_list();
         }
     }
 
-    return 0; // Завершение программы
+    return 0;\
 }
