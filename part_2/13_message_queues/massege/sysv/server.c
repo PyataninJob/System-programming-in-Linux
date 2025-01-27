@@ -14,15 +14,7 @@ struct message {
 };
 
 int main() {
-    // Создаем файл progfile, если он не существует
-    int fd = open("progfile", O_CREAT | O_RDWR, 0666);
-    if (fd == -1) {
-        perror("open");
-        return 1;
-    }
-    close(fd);
-
-    key_t key = ftok("progfile", 65); // создаем уникальный ключ
+    key_t key = ftok("server", 65); // создаем уникальный ключ
     if (key == -1) {
         perror("ftok");
         return 1;
@@ -55,12 +47,6 @@ int main() {
     // удаляем очередь сообщений
     if (msgctl(msgid, IPC_RMID, NULL) == -1) {
         perror("msgctl");
-        return 1;
-    }
-
-    // Удаляем файл progfile
-    if (unlink("progfile") == -1) {
-        perror("unlink");
         return 1;
     }
 

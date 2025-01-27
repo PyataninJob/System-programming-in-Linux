@@ -12,7 +12,7 @@ struct message {
 };
 
 int main() {
-    key_t key = ftok("progfile", 65); // создаем уникальный ключ
+    key_t key = ftok("server", 65); // создаем уникальный ключ
     if (key == -1) {
         perror("ftok");
         return 1;
