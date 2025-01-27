@@ -1,14 +1,13 @@
 CC = gcc
 CFLAGS = -Wall -pthread
-LDFLAGS = -lncurses
 
 all: server client
 
-server: server.c shared_memory.h
+server: server.c
 	$(CC) $(CFLAGS) -o server server.c
 
-client: client.c shared_memory.h
-	$(CC) $(CFLAGS) -o client client.c $(LDFLAGS)
+client: client.c
+	$(CC) $(CFLAGS) -o client client.c -lncurses
 
 clean:
 	rm -f server client

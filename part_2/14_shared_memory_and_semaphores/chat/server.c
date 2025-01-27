@@ -1,104 +1,65 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
-#include <sys/sem.h>
+#include <sys/types.h>
 #include <pthread.h>
-#include <unistd.h>
-#include "shared_memory.h"
 
-#define SEM_KEY 1234
+#define SHM_KEY 12345
+#define MAX_MSG_LEN 256
+#define MAX_USERS 10
 
-int semid;
+typedef struct {
+    char messages[MAX_USERS][MAX_MSG_LEN];
+    char users[MAX_USERS][MAX_MSG_LEN];
+    int user_count;
+    int msg_count;
+} ChatRoom;
 
-void sem_lock(int semid) {
-    struct sembuf sb = {0, -1, 0};
-    semop(semid, &sb, 1);
-}
+ChatRoom *chat_room;
 
-void sem_unlock(int semid) {
-    struct sembuf sb = {0, 1, 0};
-    semop(semid, &sb, 1);
-}
-
-void broadcast_message(struct shared_memory *shm, const char *message) {
-    sem_lock(semid);
-    if (shm->message_count < MAX_MESSAGES) {
-        strcpy(shm->messages[shm->message_count], message);
-        shm->message_count++;
-    } else {
-        for (int i = 1; i < MAX_MESSAGES; i++) {
-            strcpy(shm->messages[i - 1], shm->messages[i]);
-        }
-        strcpy(shm->messages[MAX_MESSAGES - 1], message);
-    }
-    sem_unlock(semid);
-    printf("Broadcast message: %s\n", message);
-}
-
-void add_user(struct shared_memory *shm, const char *name) {
-    sem_lock(semid);
-    if (shm->user_count < MAX_USERS) {
-        strcpy(shm->users[shm->user_count], name);
-        shm->user_count++;
-        printf("User %s has connected.\n", name);
-
-        char connect_msg[MAX_TEXT];
-        snprintf(connect_msg, MAX_TEXT, "System: User %s has joined the chat.\n", name);
-        broadcast_message(shm, connect_msg);
-    }
-    sem_unlock(semid);
-}
-
-void handle_messages(struct shared_memory *shm) {
-    char last_message[MAX_TEXT] = "";
+void *notify_clients(void *arg) {
+    int last_user_count = 0;
     while (1) {
-        sem_lock(semid);
-        if (shm->message_count > 0 && strcmp(last_message, shm->messages[shm->message_count - 1]) != 0) {
-            strcpy(last_message, shm->messages[shm->message_count - 1]);
-            printf("New message: %s\n", last_message);
-        }
-        sem_unlock(semid);
         sleep(1);
+        if (chat_room->user_count > last_user_count) {
+            for (int i = last_user_count; i < chat_room->user_count; i++) {
+                snprintf(chat_room->messages[chat_room->msg_count++], MAX_MSG_LEN, "User %s has joined the chat", chat_room->users[i]);
+            }
+            last_user_count = chat_room->user_count;
+        }
+        // Notify clients about new messages and users
     }
+    return NULL;
 }
 
 int main() {
-    key_t key;
-    int shmid;
-    struct shared_memory *shm;
-
-    key = ftok("server", 65);
-    shmid = shmget(key, sizeof(struct shared_memory), 0666 | IPC_CREAT);
-    if (shmid == -1) {
-        perror("shmget ");
+    int shmid = shmget(SHM_KEY, sizeof(ChatRoom), IPC_CREAT | 0666);
+    if (shmid < 0) {
+        perror("shmget");
         exit(1);
     }
 
-    shm = (struct shared_memory *)shmat(shmid, NULL, 0);
-    if (shm == (void *)-1) {
+    chat_room = (ChatRoom *)shmat(shmid, NULL, 0);
+    if (chat_room == (ChatRoom *)-1) {
         perror("shmat");
         exit(1);
     }
 
-    memset(shm, 0, sizeof(struct shared_memory));
+    chat_room->user_count = 0;
+    chat_room->msg_count = 0;
 
-    semid = semget(SEM_KEY, 1, 0666 | IPC_CREAT);
-    semctl(semid, 0, SETVAL, 1);
+    pthread_t notify_thread;
+    pthread_create(&notify_thread, NULL, notify_clients, NULL);
 
-    printf("Server started. Waiting for messages...\n");
+    printf("Server started. Waiting for clients...\n");
 
-    pthread_t msg_thread;
-    pthread_create(&msg_thread, NULL, (void *)handle_messages, shm);
+    pthread_join(notify_thread, NULL);
 
-    while (1) {
-        sleep(1);
-    }
-
-    shmdt(shm);
+    shmdt(chat_room);
     shmctl(shmid, IPC_RMID, NULL);
-    semctl(semid, 0, IPC_RMID);
 
     return 0;
 }
