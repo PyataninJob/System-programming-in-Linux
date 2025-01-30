@@ -8,7 +8,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    pid_t pid = atoi(argv[1]); // Получаем PID из аргумента
+    pid_t pid = atoi(argv[1]);
     if (kill(pid, SIGUSR1) == -1) {
         perror("kill");
         return 1;

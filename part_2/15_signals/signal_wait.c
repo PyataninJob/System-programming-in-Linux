@@ -17,7 +17,7 @@ int main() {
 
     printf("Waiting for SIGUSR1 signal. PID: %d\n", getpid());
     while (1) {
-        pause(); // Ожидаем сигнал
+        pause(); 
     }
 
     return 0;
