@@ -1,0 +1,7 @@
+./signal_wait 
+Waiting for SIGUSR1 signal. PID: 4916
+Received SIGUSR1 signal
+
+___________________________________________________
+ ./signal_send 4916
+Sent SIGUSR1 signal to process 4916

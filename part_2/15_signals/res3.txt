@@ -1,0 +1,11 @@
+./event_loop 
+Waiting for SIGUSR1 signal. PID: 6770
+Received SIGUSR1 signal
+Received SIGUSR1 signal
+Убито
+
+_________________________________
+/signal_send 6770
+Sent SIGUSR1 signal to process 6770
+kill -SIGUSR1 6770
+kill -SIGKILL 6770

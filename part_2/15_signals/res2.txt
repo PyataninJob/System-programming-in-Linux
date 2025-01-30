@@ -1,0 +1,26 @@
+ ./block_sigint 
+SIGINT is blocked. PID: 6028
+Try sending SIGINT with 'kill -SIGINT 6028'
+^C^C
+___________________________
+
+SIGINT is blocked. PID: 6647
+Try sending SIGINT with 'kill -SIGINT 6647'
+Определяемый пользователем сигнал 1
+
+ ./signal_send 6647
+Sent SIGUSR1 signal to process 6647
+_________________________________
+
+kill -SIGINT 6028
+ничего не произошло
+
+
+_________________________________
+Зато так
+kill -SIGKILL 6028
+Получаем 
+./block_sigint 
+SIGINT is blocked. PID: 6028
+Try sending SIGINT with 'kill -SIGINT 6028'
+^C^CУбито
