@@ -1,10 +1,10 @@
-# Игнорировать все файлы без расширений
 .vscode
 main
 main1
 main2
 main3
 main4
+
 server
 client
 
@@ -12,3 +12,6 @@ signal_wait
 signal_send 
 block_sigint
 event_loop
+
+clientUDP
+clientTSP
