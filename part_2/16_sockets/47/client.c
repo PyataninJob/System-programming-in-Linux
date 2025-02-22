@@ -1,44 +1,66 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <arpa/inet.h>
+#include <unistd.h>
 
 #define PORT 8080
 #define BUFFER_SIZE 1024
+#define HEADER_SIZE 8
+
+typedef struct custom_header {
+    uint16_t src_port;
+    uint16_t dst_port;
+    uint16_t length;
+    uint16_t checksum;
+} custom_header;
 
 int main() {
     int sockfd;
-    char buffer[BUFFER_SIZE];
-    char *message = "Привет, сервер";
-    struct sockaddr_in servaddr;
+    struct sockaddr_in server_addr;
 
-    // Создание UDP сокета
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-        perror("Ошибка создания сокета");
+        perror("Socket creation failed");
         exit(EXIT_FAILURE);
     }
-    printf("Сокет создан.\n");
 
-    memset(&servaddr, 0, sizeof(servaddr));
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(PORT);
+    inet_pton(AF_INET, "127.0.0.1", &server_addr.sin_addr);
+    // Заполнение заголовка
+    custom_header header = {
+        .src_port = htons(12345),
+        .dst_port = htons(PORT),
+        .length = htons(sizeof(custom_header) + strlen("Hello, Server!")),
+        .checksum = 0
+    };
 
-    // Заполнение информации о сервере
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_port = htons(PORT);
-    servaddr.sin_addr.s_addr = INADDR_ANY;
+    char buffer[BUFFER_SIZE];
+    memcpy(buffer, &header, sizeof(custom_header));
+    strncpy(buffer + sizeof(custom_header), "Hello, Server!", BUFFER_SIZE - sizeof(custom_header));
 
-    int n, len = sizeof(servaddr);
+    if (sendto(sockfd, buffer, ntohs(header.length), 0,
+               (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
+        perror("Sendto failed");
+        close(sockfd);
+        exit(EXIT_FAILURE);
+    }
 
-    // Отправка сообщения серверу
-    sendto(sockfd, (const char *)message, strlen(message), MSG_CONFIRM, (const struct sockaddr *)&servaddr, sizeof(servaddr));
-    printf("Сообщение отправлено: %s\n", message);
+    printf("Packet sent successfully.\n");
 
-    // Получение ответа от сервера
-    n = recvfrom(sockfd, (char *)buffer, BUFFER_SIZE, MSG_WAITALL, (struct sockaddr *)&servaddr, &len);
-    buffer[n] = '\0';
-    printf("Ответ от сервера: %s\n", buffer);
+    socklen_t addr_len = sizeof(server_addr);
+    ssize_t bytes_received = recvfrom(sockfd, buffer, BUFFER_SIZE, 0,
+                                      (struct sockaddr *)&server_addr, &addr_len);
+    if (bytes_received < 0) {
+        perror("Recvfrom failed");
+    } else if (bytes_received > HEADER_SIZE) {
+        buffer[bytes_received] = '\0';
+        printf("Received response from server: %s\n", buffer + HEADER_SIZE);
+    } else {
+        printf("Received packet too small to contain data.\n");
+    }
 
     close(sockfd);
-    printf("Сокет закрыт.\n");
     return 0;
 }
