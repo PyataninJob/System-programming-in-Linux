@@ -194,29 +194,28 @@
    ```sh
    /sbin/sshd -ddd
 
-debug1: sshd version OpenSSH_9.9, OpenSSL 3.3.1 4 Jun 2024
-debug3: Running on Linux 6.14.0-rc2-00034-gfebbc555cf0f #1 SMP Thu Feb 13 15:43:47 +07 2025 armv7l
-debug3: Started with: /sbin/sshd -ddd
-debug2: load_server_config: filename //etc/sshd_config
-debug2: load_server_config: done config len = 3294
-debug2: parse_server_config_depth: config //etc/sshd_config len 3294
-debug3: //etc/sshd_config:41 setting AuthorizedKeysFile .ssh/authorized_keys
-debug3: //etc/sshd_config:111 setting Subsystem sftp	//libexec/sftp-server
-debug1: private host key #0: ssh-rsa SHA256:ZZqTSemYzasz5Ha6J+kC+PUq276wBzpmQUrRf1K3OO4
-
-debug1: private host key #1: ecdsa-sha2-nistp256 SHA256:M2dv7LgpelEOsBp3tHxKasKe8+iJKvSxh3AhMxb7ObE
-debug1: private host key #2: ssh-ed25519 SHA256:7upc8Kb+qDLl5u4ISUGFVJ8+yonGtTnRLb1VTXVeolo
-debug1: rexec_argv[1]='-ddd'
-debug3: using //libexec/sshd-session for re-exec
-debug3: oom_adjust_setup
-debug1: Set /proc/self/oom_score_adj from 0 to -1000
-debug2: fd 7 setting O_NONBLOCK
-debug3: sock_set_v6only: set socket 7 IPV6_V6ONLY
-debug1: Bind to port 22 on ::.
-Server listening on :: port 22.
-debug2: fd 8 setting O_NONBLOCK
-debug1: Bind to port 22 on 0.0.0.0.
-Server listening on 0.0.0.0 port 22.
+   debug1: sshd version OpenSSH_9.9, OpenSSL 3.3.1 4 Jun 2024
+   debug3: Running on Linux 6.14.0-rc2-00034-gfebbc555cf0f #1 SMP Thu Feb 13 15:43:47 +07 2025 armv7l
+   debug3: Started with: /sbin/sshd -ddd
+   debug2: load_server_config: filename //etc/sshd_config
+   debug2: load_server_config: done config len = 3294
+   debug2: parse_server_config_depth: config //etc/sshd_config len 3294
+   debug3: //etc/sshd_config:41 setting AuthorizedKeysFile .ssh/authorized_keys
+   debug3: //etc/sshd_config:111 setting Subsystem sftp	//libexec/sftp-server
+   debug1: private host key #0: ssh-rsa SHA256:ZZqTSemYzasz5Ha6J+kC+PUq276wBzpmQUrRf1K3OO4
+   debug1: private host key #1: ecdsa-sha2-nistp256 SHA256:M2dv7LgpelEOsBp3tHxKasKe8+iJKvSxh3AhMxb7ObE
+   debug1: private host key #2: ssh-ed25519 SHA256:7upc8Kb+qDLl5u4ISUGFVJ8+yonGtTnRLb1VTXVeolo
+   debug1: rexec_argv[1]='-ddd'
+   debug3: using //libexec/sshd-session for re-exec
+   debug3: oom_adjust_setup
+   debug1: Set /proc/self/oom_score_adj from 0 to -1000
+   debug2: fd 7 setting O_NONBLOCK
+   debug3: sock_set_v6only: set socket 7 IPV6_V6ONLY
+   debug1: Bind to port 22 on ::.
+   Server listening on :: port 22.
+   debug2: fd 8 setting O_NONBLOCK
+   debug1: Bind to port 22 on 0.0.0.0.
+   Server listening on 0.0.0.0 port 22.
 
    ```
 Я не особо понимаю почему подключение не работает, думаю брендмауэр потрогать надо или еще что.
