@@ -194,7 +194,6 @@
    ```sh
    /sbin/sshd -ddd
 
-   /sbin/sshd -ddd
 debug1: sshd version OpenSSH_9.9, OpenSSL 3.3.1 4 Jun 2024
 debug3: Running on Linux 6.14.0-rc2-00034-gfebbc555cf0f #1 SMP Thu Feb 13 15:43:47 +07 2025 armv7l
 debug3: Started with: /sbin/sshd -ddd
@@ -220,7 +219,7 @@ debug1: Bind to port 22 on 0.0.0.0.
 Server listening on 0.0.0.0 port 22.
 
    ```
-Я не особо понимаю почему подключение не работает, думаю я брендмауэр потрогать надо или еще что.
+Я не особо понимаю почему подключение не работает, думаю брендмауэр потрогать надо или еще что.
 ## Проверка работы SSH
 
 ```sh
