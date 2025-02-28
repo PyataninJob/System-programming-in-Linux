@@ -19,16 +19,19 @@ int main() {
     struct sockaddr_in server_addr, client_addr;
     socklen_t addr_len = sizeof(client_addr);
 
+    // Создание сокета
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
         perror("Socket creation failed");
         exit(EXIT_FAILURE);
     }
 
+    // Настройка адреса сервера
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = INADDR_ANY;
     server_addr.sin_port = htons(PORT);
 
+    // Привязка сокета к порту
     if (bind(sockfd, (const struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
         perror("Bind failed");
         close(sockfd);
@@ -41,15 +44,18 @@ int main() {
         char buffer[BUFFER_SIZE];
         ssize_t bytes_received = recvfrom(sockfd, buffer, BUFFER_SIZE, 0,
                                           (struct sockaddr *)&client_addr, &addr_len);
+
         if (bytes_received > HEADER_SIZE) {
             buffer[bytes_received] = '\0';
             printf("Received message from client: %s\n", buffer + HEADER_SIZE);
 
+            // Модификация сообщения
             modify_message(buffer + HEADER_SIZE);
 
             size_t data_length = strlen(buffer + HEADER_SIZE);
             size_t total_length = HEADER_SIZE + data_length;
 
+            // Отправка модифицированного сообщения обратно клиенту
             if (sendto(sockfd, buffer, total_length, 0,
                        (struct sockaddr *)&client_addr, addr_len) < 0) {
                 perror("Sendto failed");

@@ -71,7 +71,6 @@ int main() {
     max_fd = (tcp_socket > udp_socket) ? tcp_socket : udp_socket;
 
     while (1) {
-        // Копируем активные дескрипторы в read_fds
         read_fds = active_fds;
 
         // Вызываем select для мониторинга активности
@@ -94,7 +93,7 @@ int main() {
                     client_sockets[i] = client_socket;
                     FD_SET(client_socket, &active_fds); // Добавляем в набор дескрипторов
                     if (client_socket > max_fd) {
-                        max_fd = client_socket; // Обновляем максимальный дескриптор
+                        max_fd = client_socket; 
                     }
                     printf("New TCP client connected. Socket: %d\n", client_socket);
                     break;

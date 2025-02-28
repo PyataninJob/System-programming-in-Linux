@@ -4,20 +4,39 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <netinet/ip.h>
-#include <netinet/udp.h>
 
 #define PORT 8080
 #define BUFFER_SIZE 1024
 
-void print_udp_header(struct udphdr *udph) {
+typedef struct udp_header {
+    uint16_t src_port;
+    uint16_t dst_port;
+    uint16_t length;
+    uint16_t checksum;
+} udp_header;
+
+typedef struct ip_header {
+    uint8_t ihl:4, version:4;
+    uint8_t tos;
+    uint16_t tot_len;
+    uint16_t id;
+    uint16_t frag_off;
+    uint8_t ttl;
+    uint8_t protocol;
+    uint16_t check;
+    uint32_t saddr;
+    uint32_t daddr;
+} ip_header;
+
+void print_udp_header(udp_header *udph) {
     printf("UDP Header:\n");
-    printf("  Source Port: %d\n", ntohs(udph->source));
-    printf("  Destination Port: %d\n", ntohs(udph->dest));
-    printf("  Length: %d\n", ntohs(udph->len));
-    printf("  Checksum: %d\n", ntohs(udph->check));
+    printf("  Source Port: %d\n", ntohs(udph->src_port));
+    printf("  Destination Port: %d\n", ntohs(udph->dst_port));
+    printf("  Length: %d\n", ntohs(udph->length));
+    printf("  Checksum: %d\n", ntohs(udph->checksum));
 }
 
-void print_ip_header(struct iphdr *iph) {
+void print_ip_header(ip_header *iph) {
     printf("IP Header:\n");
     printf("  Version: %d\n", iph->version);
     printf("  Header Length: %d\n", iph->ihl);
@@ -38,21 +57,21 @@ void print_data(const char *label, const char *data, int length) {
 int main() {
     int sockfd;
     char buffer[BUFFER_SIZE];
-    char *message = "Привет, сервер";
+    const char *message = "Hello, Server!";
     struct sockaddr_in servaddr, recvaddr;
     socklen_t recvaddr_len = sizeof(recvaddr);
 
-    // Создание RAW сокета
+    // Creating RAW socket
     if ((sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_UDP)) < 0) {
-        perror("Ошибка создания сокета");
+        perror("Socket creation failed");
         exit(EXIT_FAILURE);
     }
-    printf("Сокет создан.\n");
+    printf("Socket created.\n");
 
-    // Включение опции IP_HDRINCL
+    // Enabling IP_HDRINCL option
     int one = 1;
     if (setsockopt(sockfd, IPPROTO_IP, IP_HDRINCL, &one, sizeof(one)) < 0) {
-        perror("Ошибка установки IP_HDRINCL");
+        perror("Setting IP_HDRINCL failed");
         close(sockfd);
         exit(EXIT_FAILURE);
     }
@@ -62,92 +81,96 @@ int main() {
     servaddr.sin_port = htons(PORT);
     servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
 
-    // Формирование пакета
+    // Forming the packet
     char packet[BUFFER_SIZE];
-    struct iphdr *iph = (struct iphdr *)packet;
-    struct udphdr *udph = (struct udphdr *)(packet + sizeof(struct iphdr));
-    char *data = packet + sizeof(struct iphdr) + sizeof(struct udphdr);
+    ip_header *iph = (ip_header *)packet;
+    udp_header *udph = (udp_header *)(packet + sizeof(ip_header));
+    char *data = packet + sizeof(ip_header) + sizeof(udp_header);
     strcpy(data, message);
 
-    // Заполнение заголовка IP
-    iph->ihl = 5;
-    iph->version = 4;
-    iph->tos = 0;
-    iph->tot_len = htons(sizeof(struct iphdr) + sizeof(struct udphdr) + strlen(message));
-    iph->id = 0;
-    iph->frag_off = 0;
-    iph->ttl = 255;
-    iph->protocol = IPPROTO_UDP;
-    iph->check = 0;
-    iph->saddr = inet_addr("127.0.0.1");
-    iph->daddr = servaddr.sin_addr.s_addr;
+    // Filling IP header
+    *iph = (ip_header){
+        .ihl = 5,
+        .version = 4,
+        .tos = 0,
+        .tot_len = htons(sizeof(ip_header) + sizeof(udp_header) + strlen(message)),
+        .id = 0,
+        .frag_off = 0,
+        .ttl = 255,
+        .protocol = IPPROTO_UDP,
+        .check = 0,
+        .saddr = inet_addr("127.0.0.1"),
+        .daddr = servaddr.sin_addr.s_addr
+    };
 
-    // Заполнение заголовка UDP
-    udph->source = htons(12345); // произвольный порт источника
-    udph->dest = htons(PORT);
-    udph->len = htons(sizeof(struct udphdr) + strlen(message));
-    udph->check = 0;
+    // Filling UDP header
+    *udph = (udp_header){
+        .src_port = htons(12345),  // Arbitrary client port
+        .dst_port = htons(PORT),   // Server port
+        .length = htons(sizeof(udp_header) + strlen(message)),
+        .checksum = 0              // Checksum not used
+    };
 
-    // Вывод заголовков IP и UDP перед отправкой
+    // Printing IP and UDP headers before sending
     print_ip_header(iph);
     print_udp_header(udph);
 
-    // Вывод данных перед отправкой
-    print_data("Отправляемые данные", data, strlen(message));
+    // Printing data before sending
+    print_data("Sending data", data, strlen(message));
 
-    // Отправка пакета серверу
+    // Sending packet to server
     if (sendto(sockfd, packet, ntohs(iph->tot_len), 0, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0) {
-        perror("Ошибка отправки пакета");
+        perror("Packet sending failed");
         close(sockfd);
         exit(EXIT_FAILURE);
     }
-    printf("Сообщение отправлено: %s\n", message);
+    printf("Message sent: %s\n", message);
 
-    // Получение ответа от сервера
+    // Receiving response from server
     int n;
     while (1) {
         n = recvfrom(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr *)&recvaddr, &recvaddr_len);
         if (n < 0) {
-            perror("Ошибка получения ответа");
+            perror("Receiving response failed");
             close(sockfd);
             exit(EXIT_FAILURE);
         }
 
-        // Пропуск заголовков IP и UDP
-        struct iphdr *recv_iph = (struct iphdr *)buffer;
-        struct udphdr *recv_udph = (struct udphdr *)(buffer + sizeof(struct iphdr));
-        char *recv_data = buffer + sizeof(struct iphdr) + sizeof(struct udphdr);
+        // Skipping IP and UDP headers
+        ip_header *recv_iph = (ip_header *)buffer;
+        udp_header *recv_udph = (udp_header *)(buffer + sizeof(ip_header));
+        char *recv_data = buffer + sizeof(ip_header) + sizeof(udp_header);
 
-        // Вывод заголовков IP и UDP после получения
+        // Printing IP and UDP headers after receiving
         print_ip_header(recv_iph);
         print_udp_header(recv_udph);
 
-        // Вывод информации об отправителе
-        printf("Пакет получен от %s:%d\n", inet_ntoa(recvaddr.sin_addr), ntohs(recvaddr.sin_port));
+        // Printing sender information
+        printf("Packet received from %s:%d\n", inet_ntoa(recvaddr.sin_addr), ntohs(recvaddr.sin_port));
 
-        // Проверка порта назначения и IP-адреса
-        if (ntohs(recv_udph->dest) == 12345 && recv_iph->saddr == iph->daddr && recv_iph->daddr == iph->saddr) {
-            recv_data[n - sizeof(struct iphdr) - sizeof(struct udphdr)] = '\0';
-            printf("Ответ от сервера: %s\n", recv_data);
+        // Checking destination port and IP address
+        if (ntohs(recv_udph->dst_port) == 12345 && recv_iph->saddr == iph->daddr && recv_iph->daddr == iph->saddr) {
+            recv_data[n - sizeof(ip_header) - sizeof(udp_header)] = '\0';
+            printf("Response from server: %s\n", recv_data);
 
-            // Вывод полученных данных
-            print_data("Полученные данные", recv_data, strlen(recv_data));
+            // Printing received data
+            print_data("Received data", recv_data, strlen(recv_data));
 
-            // Проверка различий между отправленными и полученными данными
+            // Checking differences between sent and received data
             if (strcmp(data, recv_data) != 0) {
-                printf("Различия между отправленными и полученными данными:\n");
-                printf("Отправленные данные: %s\n", data);
-                printf("Полученные данные: %s\n", recv_data);
+                printf("Differences between sent and received data:\n");
+                printf("Sent data: %s\n", data);
+                printf("Received data: %s\n", recv_data);
             } else {
-                printf("Данные совпадают.\n");
+                printf("Data matches.\n");
             }
             break;
         } else {
-            printf("Получен пакет, предназначенный не для этого клиента.\n");
+            printf("Received packet not intended for this client.\n");
         }
     }
 
     close(sockfd);
-    printf("Сокет закрыт.\n");
+    printf("Socket closed.\n");
     return 0;
 }

@@ -1,15 +1,10 @@
-./server 
-Server is listening on port 12345...
-Received from client: Hello, Server!
-Modified string sent back to client: HELLO, SERVER!
-Received from client: Hello, Server!
-Modified string sent back to client: HELLO, SERVER!
+sudo ./server
+Server is running on port 8080...
+Received message from client: Hello, Server!
+Sent modified message back to client.
 
 
-./client 
-Data sent to server: Hello, Server!
-Received from server: HELLO, SERVER!
-
-./client 
-Data sent to server: Hello, Server!
-Received from server: HELLO, SERVER!
+sudo ./client
+Packet sent successfully.
+Received response from server: Modified: Hello, Server!
+Received response from server: Modified: Hello, Server!
