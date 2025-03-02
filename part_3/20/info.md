@@ -87,12 +87,9 @@ sudo dmesg -l info
 Makefile такой же, код взят из лекции.
 
 ```bash
-sudo dmesg -l info
 sudo insmod test.ko
 sudo dmesg -l info
 ```
-
-Пример вывода:
 
 ```
 [ 1918.751649] Test module is loaded.
@@ -105,9 +102,6 @@ sudo dmesg -l info
 sudo mknod test c 240 0
 ls -l | grep test
 ```
-
-Пример вывода:
-
 ```
 crw-r--r--  1 root     root    240,   0 мар  2 16:30 test
 ```
@@ -137,8 +131,7 @@ KBUILD_CFLAGS += -Wall -Werror
 [ 9962.554184] Test module is loading...
 [ 9962.554199] Test module loaded successfully. Major number: 240
 [10011.550767] test_write called with size=9, off=0
-[10011.550777] Wrote 9 bytes to buffer. New offset: 9. Buffer content: 'New data
-               '
+[10011.550777] Wrote 9 bytes to buffer. New offset: 9. Buffer content: 'New data'
 [10015.166644] test_read called with size=131072, off=0
 ```
 
