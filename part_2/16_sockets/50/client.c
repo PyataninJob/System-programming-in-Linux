@@ -139,19 +139,19 @@ int main() {
         close(sockfd);
         exit(EXIT_FAILURE);
     }
-printf("Received packet with length: %d\n", rx_len);
+    printf("Received packet with length: %d\n", rx_len);
 
     // Извлечение заголовков
     struct ether_header *recv_ethhdr = (struct ether_header *)recvbuf;
     struct iphdr *recv_iphdr = (struct iphdr *)(recvbuf + sizeof(struct ether_header));
     size_t ip_header_len = recv_iphdr->ihl * 4; // Размер IP-заголовка
     struct udphdr *recv_udphdr = (struct udphdr *)(recvbuf + sizeof(struct ether_header) + ip_header_len);
-printf("Full packet (%d bytes):\n", rx_len);
-for (int i = 0; i < rx_len; i++) {
-    printf("%02x ", (unsigned char)recvbuf[i]);
-    if ((i + 1) % 16 == 0) printf("\n");
-}
-printf("\n");
+    printf("Full packet (%d bytes):\n", rx_len);
+    for (int i = 0; i < rx_len; i++) {
+        printf("%02x ", (unsigned char)recvbuf[i]);
+        if ((i + 1) % 16 == 0) printf("\n");
+    }
+    printf("\n");
     // Проверка типа Ethernet-кадра
     if (ntohs(recv_ethhdr->ether_type) != ETHER_TYPE) {
         printf("Received non-IPv4 packet.\n");
